@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>芙芙连点器</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f8ff;
+        }
+        header {
+            background-color: #87CEEB;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+        h2 {
+            color: #4682B4;
+            border-bottom: 2px solid #4682B4;
+            padding-bottom: 10px;
+        }
+        h3 {
+            color: #5F9EA0;
+        }
+        .feature-card {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .file-list {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .highlight {
+            background-color: #FFFACD;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            background-color: #87CEEB;
+            color: #fff;
+            border-radius: 8px;
+        }
+    </style>
+    <script>
+        // 检测用户操作系统、位数和设备类型
+        function detectOS() {
+            const userAgent = navigator.userAgent;
+            const platform = navigator.platform;
+            
+            // 检测移动设备
+            const isMobile = /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+            if (isMobile) {
+                return { os: 'mobile', bit: 'unknown', supported: false };
+            }
+            
+            // 检测Windows
+            if (/Win/.test(platform)) {
+                // 检测Windows版本
+                const isWinXP = /Windows NT 5.1/i.test(userAgent);
+                const isWinVista = /Windows NT 6.0/i.test(userAgent);
+                if (isWinXP || isWinVista) {
+                    return { os: 'windows', bit: 'unknown', supported: false };
+                }
+                
+                // 检测64位
+                if (/WOW64/.test(userAgent) || /Win64/.test(userAgent)) {
+                    return { os: 'windows', bit: '64', supported: true };
+                } else {
+                    return { os: 'windows', bit: '32', supported: true };
+                }
+            }
+            
+            // 检测macOS
+            if (/Mac/.test(platform)) {
+                // 检测macOS版本（需要10.9+）
+                const macVersion = userAgent.match(/Mac OS X (\d+_\d+)/);
+                if (macVersion) {
+                    const [major, minor] = macVersion[1].split('_').map(Number);
+                    if ((major < 10) || (major === 10 && minor < 9)) {
+                        return { os: 'macos', bit: 'unknown', supported: false };
+                    }
+                }
+                
+                // 检测Apple Silicon
+                if (/ARM64/.test(userAgent) || /Apple Silicon/.test(userAgent)) {
+                    return { os: 'macos', bit: 'arm64', supported: true };
+                } else {
+                    return { os: 'macos', bit: 'x64', supported: true };
+                }
+            }
+            
+            // 检测Linux
+            if (/Linux/.test(platform)) {
+                // 假设现代Linux都支持Python 3
+                return { os: 'linux', bit: 'x64', supported: true };
+            }
+            
+            // 其他不支持的设备
+            return { os: 'other', bit: 'x64', supported: false };
+        }
+        
+        // 设置Python下载链接和点击事件
+        function setPythonDownloadLink() {
+            const osInfo = detectOS();
+            const pythonLink = document.getElementById('python-download-link');
+            
+            if (!osInfo.supported) {
+                // 设备不支持Python 3，阻止下载
+                pythonLink.href = '#';
+                pythonLink.onclick = function(event) {
+                    event.preventDefault();
+                    alert('您的设备不支持Python 3，无法下载。\n\n支持的设备类型：\n- Windows 7及以上版本\n- macOS 10.9及以上版本\n- 现代Linux发行版\n\n不支持的设备类型：\n- 手机\n- 平板\n- Windows XP/Vista\n- 过旧的macOS版本');
+                };
+                return;
+            }
+            
+            // 设备支持Python 3，设置下载链接
+            switch (osInfo.os) {
+                case 'windows':
+                    if (osInfo.bit === '64') {
+                        // Windows 64位（使用清华大学镜像源提高下载速度）
+                        pythonLink.href = 'https://mirrors.tuna.tsinghua.edu.cn/python/3.12.5/python-3.12.5-amd64.exe';
+                    } else {
+                        // Windows 32位（使用清华大学镜像源提高下载速度）
+                        pythonLink.href = 'https://mirrors.tuna.tsinghua.edu.cn/python/3.12.5/python-3.12.5.exe';
+                    }
+                    break;
+                case 'macos':
+                    if (osInfo.bit === 'arm64') {
+                        // macOS Apple Silicon（使用清华大学镜像源提高下载速度）
+                        pythonLink.href = 'https://mirrors.tuna.tsinghua.edu.cn/python/3.12.5/python-3.12.5-macos11.pkg';
+                    } else {
+                        // macOS Intel（使用清华大学镜像源提高下载速度）
+                        pythonLink.href = 'https://mirrors.tuna.tsinghua.edu.cn/python/3.12.5/python-3.12.5-macos11.pkg';
+                    }
+                    break;
+                case 'linux':
+                    // Linux通用下载页面
+                    pythonLink.href = 'https://www.python.org/downloads/source/';
+                    break;
+                default:
+                    // 其他支持的操作系统
+                    pythonLink.href = 'https://www.python.org/downloads/';
+            }
+            
+            // 为Python下载链接添加人机验证
+            pythonLink.addEventListener('click', function(event) {
+                if (!verifyHuman()) {
+                    event.preventDefault();
+                }
+            });
+        }
+        
+        // 生成人机验证问题
+        function generateVerification() {
+            // 生成两个1-10之间的随机数
+            const num1 = Math.floor(Math.random() * 10) + 1;
+            const num2 = Math.floor(Math.random() * 10) + 1;
+            const operator = Math.random() > 0.5 ? '+' : '-';
+            let answer;
+            
+            if (operator === '+') {
+                answer = num1 + num2;
+            } else {
+                // 确保减法结果为正数
+                if (num1 < num2) {
+                    [num1, num2] = [num2, num1];
+                }
+                answer = num1 - num2;
+            }
+            
+            return { question: `${num1} ${operator} ${num2} = ?`, answer: answer };
+        }
+        
+        // 验证用户输入
+        function verifyHuman() {
+            const verification = generateVerification();
+            const userAnswer = prompt(`请回答以下问题以验证您是人类：\n\n${verification.question}`);
+            
+            if (userAnswer === null) {
+                // 用户取消了验证
+                return false;
+            }
+            
+            // 验证答案
+            if (parseInt(userAnswer) === verification.answer) {
+                return true;
+            } else {
+                alert('验证失败，请重新尝试！');
+                return verifyHuman(); // 递归调用，让用户重新验证
+            }
+        }
+        
+        // 添加Python 3检测提示功能
+        function setupFufuDownload() {
+            const fufuLink = document.getElementById('fufu-download-link');
+            
+            fufuLink.addEventListener('click', function(event) {
+                // 先进行人机验证
+                if (!verifyHuman()) {
+                    event.preventDefault();
+                    return;
+                }
+                
+                // 检测用户设备是否支持Python 3
+                const osInfo = detectOS();
+                if (!osInfo.supported) {
+                    // 设备不支持Python 3，直接下载连点器
+                    return;
+                }
+                
+                // 询问用户是否已安装Python 3
+                const hasPython = confirm('您的电脑上是否已经安装了Python 3？\n\n如果已安装，请点击"确定"继续下载芙芙连点器。\n如果未安装，请点击"取消"，系统将为您提供Python 3的下载选项。');
+                
+                if (hasPython) {
+                    // 用户已安装Python 3，继续下载连点器
+                    return;
+                } else {
+                    // 用户未安装Python 3，询问是否一起下载
+                    event.preventDefault(); // 阻止默认下载行为
+                    
+                    const downloadPython = confirm('是否需要下载Python 3？\n\n点击"确定"将先下载Python 3，然后下载芙芙连点器。\n点击"取消"将只下载芙芙连点器。');
+                    
+                    if (downloadPython) {
+                        // 先下载Python 3
+                        const pythonLink = document.getElementById('python-download-link');
+                        // 打开Python下载链接
+                        window.open(pythonLink.href, '_blank');
+                        // 延迟后自动下载芙芙连点器
+                        setTimeout(() => {
+                            window.open(fufuLink.href, '_blank');
+                        }, 1000); // 1秒延迟
+                    } else {
+                        // 只下载芙芙连点器
+                        window.open(fufuLink.href, '_blank');
+                    }
+                }
+            });
+        }
+
+        // 页面加载完成后设置下载链接和事件
+        window.onload = function() {
+            setPythonDownloadLink();
+            setupFufuDownload();
+        };
+    </script>
+</head>
+<body>
+    <header>
+        <h1>芙芙连点器</h1>
+        <p>芙芙连点器实现的功能和工具</p>
+        <p><strong>软件作者：</strong>叫我芙芙就好_(澜_)</p>
+        <p><strong>B站ID：</strong>叫我芙芙就好_</p>
+    </header>
+
+    <main>
+        <section class="feature-card">
+            <h2>1. 芙芙鼠标连点器 (mouse_clicker.py)</h2>
+            <p>这是芙芙连点器中的主要程序，是一个功能完善的鼠标连点器工具。</p>
+            
+            <h3>主要功能：</h3>
+            <ul>
+                <li><strong>高速度点击：</strong>使用win32api实现最高5000次/秒的点击速度</li>
+                <li><strong>两种点击类型：</strong>支持左键和右键点击</li>
+                <li><strong>自定义点击速度：</strong>通过滑块或输入框设置点击频率</li>
+                <li><strong>热键控制：</strong>可自定义开始/停止热键（支持键盘和鼠标键）</li>
+                <li><strong>系统托盘支持：</strong>最小化到系统托盘，不占用任务栏空间</li>
+                <li><strong>用户友好界面：</strong>天蓝色背景，简洁直观的操作界面</li>
+                <li><strong>窗口居中：</strong>程序启动时自动居中显示</li>
+                <li><strong>图标支持：</strong>自定义窗口和任务栏图标</li>
+            </ul>
+            
+            <h3>技术特点：</h3>
+            <ul>
+                <li>使用tkinter构建GUI界面</li>
+                <li>多线程处理，避免界面卡顿</li>
+                <li>批量点击模式优化，提高高速度点击效率</li>
+                <li>全局键盘和鼠标监听</li>
+                <li>错误处理机制，提高程序稳定性</li>
+            </ul>
+        </section>
+
+        <section class="feature-card">
+            <h2>2. 点击速度测试工具</h2>
+            
+            <h3>2.1 图形界面测试工具 (speed_tester.py)</h3>
+            <p>一个带有GUI界面的点击速度测试工具，用于测量鼠标连点器的实际点击速度。</p>
+            <ul>
+                <li>直观的测试界面</li>
+                <li>实时显示点击次数和速度</li>
+                <li>开始/停止控制按钮</li>
+                <li>使用win32api实现高速度测试</li>
+            </ul>
+            
+            <h3>2.2 命令行测试工具</h3>
+            <p>提供两个命令行测试脚本，用于更详细地测试点击速度：</p>
+            <ul>
+                <li><strong>simple_speed_test.py：</strong>简单的点击速度测试脚本</li>
+                <li><strong>test_click_speed.py：</strong>测试不同点击方式的性能比较</li>
+            </ul>
+        </section>
+
+        <section class="feature-card">
+            <h2>3. 辅助工具和脚本</h2>
+            <p>FMC文件夹还包含一些辅助工具和脚本，用于程序的启动和部署：</p>
+            
+            <h3>启动脚本：</h3>
+            <ul>
+                <li><strong>MouseClicker.vbs：</strong>Visual Basic脚本，用于启动鼠标连点器</li>
+                <li><strong>MouseClickerLauncher.bat：</strong>批处理文件，用于启动程序</li>
+            </ul>
+            
+            <h3>快捷方式创建脚本：</h3>
+            <ul>
+                <li><strong>CreateDesktopShortcut.ps1：</strong>创建桌面快捷方式</li>
+                <li><strong>CreateDesktopShortcutFinal.ps1：</strong>最终版快捷方式创建脚本</li>
+                <li><strong>CreateHiddenShortcut.ps1：</strong>创建隐藏快捷方式</li>
+            </ul>
+            
+            <h3>其他文件：</h3>
+            <ul>
+                <li><strong>FMC.ico：</strong>程序图标文件</li>
+                <li><strong>test_win32api.py：</strong>win32api测试脚本</li>
+                <li><strong>test_error.py：</strong>错误处理测试脚本</li>
+            </ul>
+        </section>
+
+        <section class="feature-card">
+            <h2>4. 文件夹结构</h2>
+            <div class="file-list">
+                <pre>
+D:\FMC/
+  ├── __pycache__/                    # Python编译缓存
+  ├── CreateDesktopShortcut.ps1       # 创建桌面快捷方式脚本
+  ├── CreateDesktopShortcutFinal.ps1  # 最终版快捷方式脚本
+  ├── CreateHiddenShortcut.ps1        # 创建隐藏快捷方式脚本
+  ├── FMC.ico                         # 程序图标
+  ├── MouseClicker.vbs                # VBS启动脚本
+  ├── MouseClickerLauncher.bat        # 批处理启动脚本
+  ├── TestProgram.ps1                 # 测试程序脚本
+  ├── mouse_clicker.py                # 主程序 - 鼠标连点器
+  ├── simple_speed_test.py            # 简单速度测试脚本
+  ├── speed_tester.py                 # 图形界面速度测试工具
+  ├── test_click_speed.py             # 详细速度测试脚本
+  ├── test_error.py                   # 错误处理测试脚本
+  └── test_win32api.py                # win32api测试脚本
+                </pre>
+            </div>
+        </section>
+
+        <section class="feature-card">
+            <h2>5. 使用说明</h2>
+            
+            <h3>启动程序：</h3>
+            <ul>
+                <li>直接运行 <span class="highlight">mouse_clicker.py</span> 文件</li>
+                <li>或使用 <span class="highlight">MouseClickerLauncher.bat</span> 批处理文件</li>
+                <li>或使用 <span class="highlight">MouseClicker.vbs</span> VBS脚本</li>
+            </ul>
+            
+            <h3>基本操作：</h3>
+            <ol>
+                <li>选择点击类型（左键/右键）</li>
+                <li>通过滑块或输入框设置点击速度</li>
+                <li>点击"应用"按钮确认速度设置</li>
+                <li>使用默认热键F9或自定义热键开始/停止点击</li>
+                <li>点击窗口右上角关闭按钮或从系统托盘退出程序</li>
+            </ol>
+        </section>
+
+        <section class="feature-card">
+            <h2>6. 下载连点器</h2>
+            <p>请根据需要点击以下按钮进行下载：</p>
+            <div style="margin: 20px 0;">
+                <a id="python-download-link" href="https://www.python.org/downloads/" target="_blank" style="background-color: #4682B4; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; text-decoration: none; margin-right: 15px; display: inline-block;">
+                    下载Python 3
+                </a>
+                <a id="fufu-download-link" href="./FMC.zip" target="_blank" style="background-color: #4682B4; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; text-decoration: none; margin-right: 15px; display: inline-block;">
+                    下载芙芙连点器
+                </a>
+                <a href="https://github.com/Furina-LS/FMC.github.io" target="_blank" style="background-color: #333; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; text-decoration: none; display: inline-block;">
+                    在GitHub查看芙芙连点器
+                </a>
+            </div>
+            <p style="margin-top: 15px; color: #666; font-size: 14px;">
+                说明：点击"下载芙芙连点器"将直接下载FMC.zip压缩文件。请确保已安装Python 3（推荐3.8及以上版本）才能运行程序。
+            </p>
+            <p style="margin-top: 10px; color: #ff6b6b; font-size: 14px;">
+                <strong>注意：</strong>打开连点器可能会出现防毒软件误报，无需理会（如果真的怕毒的话你可以喂给AI询问有没有毒...我真的没毒啊qwq）
+            </p>
+        </section>
+
+        <section class="feature-card">
+            <h2>7. 特别鸣谢</h2>
+            <p>感谢以下人员对本项目的支持和贡献：</p>
+            <ul>
+                <li>炎风鸣铃</li>
+                <li>Night_</li>
+                <li>Qwerty-HYPER</li>
+                <li>X-Ray_Return</li>
+                <li>未知_地铁逃生</li>
+                <li>做个屑是个82</li>
+                <li>地铁逃生_老坤</li>
+            </ul>
+        </section>
+
+
+    </main>
+
+    <footer>
+        <p>&copy; 2024 芙芙连点器</p>
+    </footer>
+</body>
+</html>
